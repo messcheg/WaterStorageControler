@@ -27,7 +27,7 @@
 #include <SPI.h>
 //#include <Fonts/FreeSerifItalic24pt7b.h>
 #include <Fonts/FreeSerifItalic18pt7b.h>
-#include <Fonts/FreeSerifItalic12pt7b.h>
+//#include <Fonts/FreeSerifItalic12pt7b.h>
 #include <Fonts/FreeSerifItalic9pt7b.h>
 #include <OneWire.h> 
 #include <DallasTemperature.h>
@@ -89,6 +89,7 @@ const int DelayInterval = 3500;
 // Setup Time module
 ThreeWire myWire(RtcDS1302_DAT_IO ,RtcDS1302_CLK_SCLK,RtcDS1302_RST_CE); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
+RtcDateTime compiletime = RtcDateTime(__DATE__, __TIME__); 
 
 
 /********************************************************************/
@@ -131,7 +132,7 @@ void setup() {
   
   sensors.begin(); 
   Rtc.Begin();
-
+  CheckTime();
   delay(1000);
 }
 
@@ -180,6 +181,13 @@ void loop() {
     }
 
   }
+}
+void CheckTime()
+{
+   if (!Rtc.IsDateTimeValid()) Rtc.SetDateTime(compiletime);
+   if (Rtc.GetIsWriteProtected())  Rtc.SetIsWriteProtected(false);
+   if (!Rtc.GetIsRunning()) Rtc.SetIsRunning(true);
+   if (Rtc.GetDateTime() < compiletime) Rtc.SetDateTime(compiletime);
 }
 
 void setValves(byte waterlevelInPercentage)
@@ -267,8 +275,8 @@ void displayCentreText(String text, int textcolor, int backgroundcolor)
 
   if (text.length() < 6)
     display.setFont(&FreeSerifItalic18pt7b);
-  else if (text.length() < 10)
-    display.setFont(&FreeSerifItalic12pt7b);
+  //else if (text.length() < 10)
+  //  display.setFont(&FreeSerifItalic12pt7b);
   else if (text.length() < 14)
     display.setFont(&FreeSerifItalic9pt7b);
   else display.setFont();  
@@ -325,15 +333,19 @@ float timeToDistance(int duration)
   // Calculating the distance (simple)
   // float distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
 
+  float c = getCurrentTemperature();
+  if (c < -30 || c > 80) c = 20.0; // The thermometer reports -127C when it's not found or 85C when there is an error. In that case we'll calculate with 20C
+
   // Using practical airspeed formula from https://en.wikipedia.org/wiki/Speed_of_sound
-   float distance = 0.00005 * duration * 20.05 * sqrt(getCurrentTemperature() + 273.15);
+   float distance = 0.00005 * duration * 20.05 * sqrt(c + 273.15);
    return distance;
 }
 
 float getCurrentTemperature()
 {
   sensors.requestTemperatures();
-  return sensors.getTempCByIndex(0);
+  float c = sensors.getTempCByIndex(0);
+  return c;
 }
 
 float measureDistance()
