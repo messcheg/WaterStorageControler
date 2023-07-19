@@ -33,6 +33,7 @@
 #include <DallasTemperature.h>
 #include <ThreeWire.h>  
 #include <RtcDS1302.h>
+#include <EEPROM.h>
 
 #define VATEN_VOL 101.1 // Measured Distance when the containers are filled 
 #define VATEN_LEEG 201.0 // Measured Distance when the containers are empty
@@ -81,8 +82,8 @@ byte currentValve = 0;
 
 //History of measurements
 const int historySize = 96;
-const unsigned long OneDayInMilliSeconds = 21600000; // 4 keer per dag
-//const int OneDayInMilliSeconds = 86400000;
+// const unsigned long OneDayInMilliSeconds = 21600000; // 4 keer per dag
+const unsigned long OneDayInMilliSeconds = 86400000;
 const int DelayInterval = 3500;
 
 /*********************************************************************/
@@ -138,9 +139,10 @@ void setup() {
 
 void loop() {
   byte previous[historySize];
-  for(int i=0; i<historySize ; i++) previous[i] = 0;
-  bool roundRobin = false;
-  byte currentDay = 0;
+  //for(int i=0; i<=historySize + 2 ; i++) EEPROM.update(i,0); // reset stored values
+  for(int i=0; i<historySize ; i++) previous[i] = EEPROM.read(i);
+  bool roundRobin = EEPROM.read(historySize+2) == 1;
+  byte currentDay = EEPROM.read(historySize+1);
   unsigned long lasttime = millis();
   while (true)
   {
@@ -171,12 +173,15 @@ void loop() {
     if ((lasttime > currenttime) || (currenttime - lasttime > OneDayInMilliSeconds))
     {
       // a new day
+      EEPROM.update(currentDay, previous[currentDay]);
       currentDay++;
       if (currentDay == historySize)
       {
         roundRobin = true;
+        EEPROM.update(historySize+2,1);
         currentDay = 0;
       }
+      EEPROM.update(historySize+1,currentDay);
       lasttime = currenttime; 
     }
 
