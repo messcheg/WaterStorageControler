@@ -197,11 +197,11 @@ void CheckTime()
 
 void setValves(byte waterlevelInPercentage)
 {
-  if (waterlevelInPercentage < 6 || waterlevelInPercentage > 150) 
+  if (waterlevelInPercentage < 10 || waterlevelInPercentage > 150) 
   {
       SwitchTo(RELAY_VALVE_TO_TAP, "TAP"); 
   }
-  if (waterlevelInPercentage > 8 && waterlevelInPercentage < 150) // 150 to protect from sensor failure
+  if (waterlevelInPercentage > 13 && waterlevelInPercentage < 150) // 150 to protect from sensor failure
   {
      SwitchTo(RELAY_VALVE_TO_PUMP, "PUMP");
   }
