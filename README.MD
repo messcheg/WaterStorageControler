@@ -19,4 +19,5 @@ The process works as follows:
 - if the level is below a certain treshold, the system will switch  
   to tapwater                                                       
 - if the level is above a certain level, the system will switch to  
-  pumpwater                                                         
+  pumpwater      
+- you can find the scheme on https://app.cirkitdesigner.com/project/c0ec4d54-bd06-43c7-bd29-d0260e1bef4a                                                   
