@@ -26,9 +26,9 @@
 #include <Adafruit_SSD1331.h>
 #include <SPI.h>
 //#include <Fonts/FreeSerifItalic24pt7b.h>
-#include <Fonts/FreeSerifItalic18pt7b.h>
-//#include <Fonts/FreeSerifItalic12pt7b.h>
-#include <Fonts/FreeSerifItalic9pt7b.h>
+//#include <Fonts/FreeSerifItalic18pt7b.h>
+#include <Fonts/FreeSerifItalic12pt7b.h>
+//#include <Fonts/FreeSerifItalic9pt7b.h>
 #include <OneWire.h> 
 #include <DallasTemperature.h>
 #include <ThreeWire.h>  
@@ -37,6 +37,9 @@
 
 #define VATEN_VOL 101.1 // Measured Distance when the containers are filled 
 #define VATEN_LEEG 201.0 // Measured Distance when the containers are empty
+
+#define PERCENTAGE2Switch2TAP 15
+#define PERCENTAGE2Switch2PUMP 18
 
 /////////////////////
 // Pin Definitions //
@@ -81,7 +84,7 @@ byte currentValve = 0;
 #define DARKBLUE        0x006D
 
 //History of measurements
-const int historySize = 96;
+const byte historySize = 96;
 // const unsigned long OneDayInMilliSeconds = 21600000; // 4 keer per dag
 const unsigned long OneDayInMilliSeconds = 86400000;
 const int DelayInterval = 3500;
@@ -90,7 +93,6 @@ const int DelayInterval = 3500;
 // Setup Time module
 ThreeWire myWire(RtcDS1302_DAT_IO ,RtcDS1302_CLK_SCLK,RtcDS1302_RST_CE); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
-RtcDateTime compiletime = RtcDateTime(__DATE__, __TIME__); 
 
 
 /********************************************************************/
@@ -114,7 +116,7 @@ Adafruit_SSD1331 display = Adafruit_SSD1331(&SPI, cs, dc, rst);
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Starting up");
+//  Serial.println("Starting up");
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
 
@@ -129,7 +131,7 @@ void setup() {
   display.fillScreen(BLACK);
   displayInformation("Welcome", "Starting", LIGHTBLUE, BLACK);
 
-  Serial.println("... sensors");
+  //Serial.println("... sensors");
   
   sensors.begin(); 
   Rtc.Begin();
@@ -152,9 +154,9 @@ void loop() {
     displayInformation("Time:", getTime(now),BLUE, BLACK);
     delay(DelayInterval);
     float distance = measureDistance();
-    displayInformation("Distance in centimeter:", String(distance), GREEN, BLACK);
+    displayInformation("Distance (cm):", String(distance), GREEN, BLACK);
     delay(DelayInterval);
-    displayInformation("Volume in liters:", String(getVolumeInLiters(distance)), LIGHTBLUE, BLACK);
+    displayInformation("Volume (L):", String(getVolumeInLiters(distance)), LIGHTBLUE, BLACK);
     delay(DelayInterval);
     byte currentPercentage = previous[currentDay] = (byte)(int)(getVolumePercentage(distance) * 100 + 0.5);
     displayInformation("Waterlevel:", String(currentPercentage) + '%', LIGHTBLUE, BLACK);
@@ -189,6 +191,8 @@ void loop() {
 }
 void CheckTime()
 {
+  RtcDateTime compiletime = RtcDateTime(__DATE__, __TIME__); 
+   
    if (!Rtc.IsDateTimeValid()) Rtc.SetDateTime(compiletime);
    if (Rtc.GetIsWriteProtected())  Rtc.SetIsWriteProtected(false);
    if (!Rtc.GetIsRunning()) Rtc.SetIsRunning(true);
@@ -197,21 +201,21 @@ void CheckTime()
 
 void setValves(byte waterlevelInPercentage)
 {
-  if (waterlevelInPercentage < 10 || waterlevelInPercentage > 150) 
+  if (waterlevelInPercentage < PERCENTAGE2Switch2TAP || waterlevelInPercentage > 150) 
   {
       SwitchTo(RELAY_VALVE_TO_TAP, "TAP"); 
   }
-  if (waterlevelInPercentage > 13 && waterlevelInPercentage < 150) // 150 to protect from sensor failure
+  if (waterlevelInPercentage > PERCENTAGE2Switch2PUMP && waterlevelInPercentage < 150) // 150 to protect from sensor failure
   {
      SwitchTo(RELAY_VALVE_TO_PUMP, "PUMP");
   }
 }
 
-void SwitchTo(int valveTo, String valveName)
+void SwitchTo(byte valveTo, String valveName)
 {
   if (currentValve != valveTo)
   {
-      displayInformation("SwitchTo:", valveName + " (" + valveTo +")",BLUE, BLACK);
+      displayInformation("SwitchTo:", valveName ,BLUE, BLACK);
       digitalWrite(valveTo, RELAY_ON);
       delay(20000); // wait 20 seconds to switch
       digitalWrite(valveTo, RELAY_OFF);
@@ -278,13 +282,13 @@ void displayCentreText(String text, int textcolor, int backgroundcolor)
   //display.setTextSize(3);
   display.fillRect(0, 20 , 127, 33, backgroundcolor);
 
-  if (text.length() < 6)
-    display.setFont(&FreeSerifItalic18pt7b);
+  //if (text.length() < 6)
+  //  display.setFont(&FreeSerifItalic18pt7b);
   //else if (text.length() < 10)
-  //  display.setFont(&FreeSerifItalic12pt7b);
-  else if (text.length() < 14)
-    display.setFont(&FreeSerifItalic9pt7b);
-  else display.setFont();  
+    display.setFont(&FreeSerifItalic12pt7b);
+  //else if (text.length() < 14)
+  //  display.setFont(&FreeSerifItalic9pt7b);
+  //else display.setFont();  
   display.print(text);
   display.setFont();  
 }
